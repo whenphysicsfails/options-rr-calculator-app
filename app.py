@@ -11,12 +11,16 @@ st.write(pkg_resources.get_distribution("yfinance").version)
 import streamlit as st
 import math
 
-st.title("Options Risk/Reward Calculator")
+st.title("Options Swing Risk/Reward Calculator")
 
-st.write("Enter your trade details below:")
+st.write(" ")
+
+profit_goal = st.number_input("Profit Goal Per Trade ($)", value=400, step=50)
+st.write(" ")
 
 # 1. Underlying Stock Inputs
-ticker_symbol = st.text_input("Underlying Stock Ticker Symbol", value="AAPL")
+ticker_symbol = st.text_input("**STOCK SELECTION**", value="AAPL")
+
 
 # Try to fetch the current price from yfinance
 if ticker_symbol:
@@ -25,7 +29,7 @@ if ticker_symbol:
         hist = ticker.history(period="1d")
         if not hist.empty:
             fetched_price = hist['Close'].iloc[-1]
-            st.write(f"Fetched current price for {ticker_symbol}: ${fetched_price:.2f}")
+            st.write(f"**<span style='color:blue'>${fetched_price:.2f}**</span>", unsafe_allow_html=True)
         else:
             fetched_price = None
             st.warning("No price data available from yfinance.")
@@ -41,13 +45,17 @@ if fetched_price:
 else:
     current_price = st.number_input("Enter Current Stock Price", value=0.0, step=0.01)
 
+st.write(" ")
+st.write("**PROFIT / RISK TARGETS**")
+target_move = st.number_input("Expected Upward Move in Underlying ($)", value=3.0, step=0.5)
+stop_move = st.number_input("Downward Move to Stop ($)", value=0.43, step=0.1)
+st.write(" ")
 # 2. Option Trade Inputs
+st.write("**OPTIONS DETAILS**")
 option_premium = st.number_input("Option Premium ($)", value=2.75, step=0.25)
 delta = st.number_input("Delta", value=0.46, step=0.01)
 gamma = st.number_input("Gamma", value=0.0465, step=0.001)
-target_move = st.number_input("Expected Upward Move in Underlying ($)", value=3.0, step=0.5)
-stop_move = st.number_input("Downward Move to Stop ($)", value=0.43, step=0.1)
-profit_goal = st.number_input("Profit Goal ($)", value=400, step=50)
+
 
 # 3. Calculations (using a simple delta+gamma approximation)
 d_option_up = delta * target_move + 0.5 * gamma * (target_move ** 2)
@@ -69,11 +77,13 @@ total_loss = loss_per_contract * contracts_needed
 # 4. Display the Results
 st.subheader("Calculation Results")
 st.write(f"Current underlying price: ${current_price:.2f}")
-st.write(f"Profit per contract (if underlying moves up by ${target_move:.2f}): ${profit_per_contract:,.2f}")
-st.write(f"Loss per contract (if underlying drops by ${stop_move:.2f} to stop): ${loss_per_contract:,.2f}")
-st.write(f"Contracts needed to reach a ${profit_goal} profit goal: {contracts_needed}")
-st.write(f"Total potential profit: ${total_profit:,.2f}")
-st.write(f"Total potential loss: ${total_loss:,.2f}")
+st.markdown(f"<p style='font-size:16px;'>Profit per contract (if underlying moves up by <b>${target_move:.2f}</b>): <span style='color:green'>${profit_per_contract:,.2f}</span></p>", unsafe_allow_html=True)
+st.markdown(f"<p style='font-size:16px;'>Loss per contract (if underlying stops by $<b>{stop_move:.2f}</b>): <span style='color:red'>-${loss_per_contract:,.2f}</span></p>", unsafe_allow_html=True)
+st.write("")
+st.write("<b>SUMMARY</b>", unsafe_allow_html=True)
+st.write(f"Contracts needed to reach a ${profit_goal} profit goal: <b>{contracts_needed}</b>", unsafe_allow_html=True)
+st.write(f"Total potential profit: <span style='color:green'>${total_profit:,.2f}</span>", unsafe_allow_html=True)
+st.write(f"Total potential loss: <span style='color:red'>-${total_loss:,.2f}</span>", unsafe_allow_html=True)
 if total_loss > 0:
     rr_ratio = round(total_profit / total_loss, 2)
     st.write(f"Risk:Reward Ratio = 1 : {rr_ratio}")
